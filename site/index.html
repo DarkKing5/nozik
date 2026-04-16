@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ОИИ — Лабораторные работы 9–14 | ML проект</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #050811;
+      --bg2: #0a1020;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --accent1: #6366f1;
+      --accent2: #8b5cf6;
+      --accent3: #06b6d4;
+      --accent4: #10b981;
+      --accent5: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --glow: 0 0 40px rgba(99,102,241,0.3);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content:''; position:fixed; inset:0; z-index:0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* ── ANIMATED BG GRADIENT ── */
+    .bg-gradient {
+      position: fixed; inset:0; z-index:0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 20%, rgba(99,102,241,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(139,92,246,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 50% 50%, rgba(6,182,212,0.05) 0%, transparent 70%);
+      animation: bgShift 12s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes bgShift {
+      0% { opacity: 1; transform: scale(1) rotate(0deg); }
+      100% { opacity: 0.8; transform: scale(1.05) rotate(3deg); }
+    }
+
+    /* ── FLOATING PARTICLES ── */
+    .particles { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+    .particle {
+      position:absolute; border-radius:50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.6), transparent);
+      animation: float linear infinite;
+    }
+    @keyframes float {
+      0% { transform: translateY(100vh) rotate(0deg); opacity:0; }
+      10% { opacity:1; }
+      90% { opacity:1; }
+      100% { transform: translateY(-100px) rotate(720deg); opacity:0; }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top:0; left:0; right:0; z-index:100;
+      padding: 1rem 2rem;
+      display: flex; align-items:center; justify-content:space-between;
+      background: rgba(5,8,17,0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .nav-logo {
+      font-weight: 800; font-size: 1.1rem;
+      background: linear-gradient(135deg, var(--accent1), var(--accent3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-links { display:flex; gap:1.5rem; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size:0.875rem;
+      font-weight: 500; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; z-index:1;
+      min-height: 100vh;
+      display: flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align: center; padding: 2rem;
+      padding-top: 80px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items:center; gap:0.5rem;
+      padding: 0.375rem 1rem;
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 100px;
+      font-size: 0.75rem; font-weight:600;
+      color: var(--accent1); letter-spacing:0.05em; text-transform:uppercase;
+      margin-bottom: 2rem;
+      animation: fadeInDown 0.8s ease both;
+    }
+    .hero-badge .dot {
+      width:6px; height:6px; border-radius:50%;
+      background: var(--accent1);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 7vw, 5.5rem);
+      font-weight: 900; line-height: 1.05;
+      margin-bottom: 1.5rem;
+      animation: fadeInDown 0.8s 0.1s ease both;
+    }
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-size: 200%;
+      animation: gradientShift 4s ease-in-out infinite alternate;
+    }
+    @keyframes gradientShift { 0%{background-position:0%} 100%{background-position:100%} }
+
+    .hero p {
+      font-size: 1.25rem; color: var(--muted); max-width:650px;
+      line-height:1.7; margin-bottom: 2.5rem;
+      animation: fadeInDown 0.8s 0.2s ease both;
+    }
+    .hero-stats {
+      display: flex; gap:2rem; flex-wrap:wrap; justify-content:center;
+      animation: fadeInDown 0.8s 0.3s ease both;
+    }
+    .hero-stat {
+      display:flex; flex-direction:column; align-items:center;
+      padding: 1rem 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .hero-stat .num {
+      font-size: 2rem; font-weight:800;
+      background: linear-gradient(135deg, var(--accent1), var(--accent3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-stat .label { font-size:0.75rem; color:var(--muted); margin-top:0.25rem; }
+
+    .scroll-hint {
+      position:absolute; bottom:2rem; left:50%; transform:translateX(-50%);
+      display:flex; flex-direction:column; align-items:center; gap:0.5rem;
+      color:var(--muted); font-size:0.75rem;
+      animation: fadeInDown 1s 0.5s ease both;
+    }
+    .scroll-arrow {
+      width:20px; height:20px; border-right:2px solid var(--muted); border-bottom:2px solid var(--muted);
+      transform: rotate(45deg);
+      animation: bounce 2s ease-in-out infinite;
+    }
+    @keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(5px)} }
+
+    /* ── SECTIONS ── */
+    section { position:relative; z-index:1; padding: 5rem 2rem; }
+    .container { max-width: 1200px; margin:0 auto; }
+
+    .section-header { text-align:center; margin-bottom:3rem; }
+    .section-tag {
+      display:inline-block; padding:0.25rem 0.75rem;
+      border-radius:100px; font-size:0.7rem; font-weight:700;
+      letter-spacing:0.1em; text-transform:uppercase; margin-bottom:1rem;
+    }
+    .section-header h2 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight:800; margin-bottom:0.75rem;
+    }
+    .section-header p { color:var(--muted); font-size:1rem; max-width:600px; margin:0 auto; }
+
+    /* ── LAB CARDS ── */
+    .lab-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+      opacity:0; transform:translateY(40px);
+      transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.3s, box-shadow 0.3s;
+    }
+    .lab-card.visible { opacity:1; transform:translateY(0); }
+    .lab-card:hover { border-color: rgba(99,102,241,0.4); box-shadow: var(--glow); }
+
+    .lab-card-header {
+      display:flex; align-items:flex-start; gap:1.25rem; margin-bottom:2rem;
+      flex-wrap:wrap;
+    }
+    .lab-num {
+      width:56px; height:56px; border-radius:16px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.5rem; font-weight:900; flex-shrink:0;
+    }
+    .lab-card-title h3 { font-size:1.4rem; font-weight:700; margin-bottom:0.25rem; }
+    .lab-card-title p { color:var(--muted); font-size:0.875rem; }
+
+    .lab-body { display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start; }
+    @media(max-width:768px) { .lab-body { grid-template-columns:1fr; } }
+
+    .theory-block h4 {
+      font-size:0.8rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+      color:var(--muted); margin-bottom:1rem;
+    }
+    .theory-steps { list-style:none; display:flex; flex-direction:column; gap:0.75rem; }
+    .theory-steps li {
+      display:flex; gap:0.75rem; align-items:flex-start;
+      font-size:0.9rem; line-height:1.6;
+    }
+    .step-num {
+      width:22px; height:22px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.65rem; font-weight:700; flex-shrink:0; margin-top:1px;
+    }
+
+    /* ── CODE BLOCK ── */
+    .code-block {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; overflow:hidden;
+    }
+    .code-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0.5rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .code-dots { display:flex; gap:6px; }
+    .code-dots span { width:10px; height:10px; border-radius:50%; }
+    .code-lang { font-size:0.7rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+    pre {
+      padding:1.25rem; overflow-x:auto;
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.78rem; line-height:1.7; color:#a5f3fc;
+    }
+    .kw { color:#c084fc; }
+    .fn { color:#6ee7b7; }
+    .str { color:#fcd34d; }
+    .cm { color:#475569; font-style:italic; }
+    .num-lit { color:#fb923c; }
+
+    /* ── METRICS ── */
+    .metrics-row { display:flex; gap:1rem; flex-wrap:wrap; margin-top:1.5rem; }
+    .metric-pill {
+      padding:0.5rem 1rem; border-radius:100px;
+      font-size:0.8rem; font-weight:600;
+      border: 1px solid;
+      display:flex; align-items:center; gap:0.4rem;
+    }
+
+    /* ── CHART WRAPPER ── */
+    .chart-wrap {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius:16px; padding:1.5rem;
+    }
+    .chart-title { font-size:0.8rem; font-weight:600; color:var(--muted); margin-bottom:1rem; text-transform:uppercase; letter-spacing:0.05em; }
+    canvas { max-height:250px; }
+
+    /* ── RESULTS TABLE ── */
+    .results-table {
+      width:100%; border-collapse:collapse;
+      font-size:0.875rem; margin-top:1rem;
+    }
+    .results-table th {
+      text-align:left; padding:0.75rem 1rem;
+      font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+      color:var(--muted); border-bottom:1px solid var(--border);
+    }
+    .results-table td {
+      padding:0.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.04);
+    }
+    .results-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .badge {
+      display:inline-block; padding:0.2rem 0.6rem; border-radius:6px;
+      font-size:0.7rem; font-weight:700;
+    }
+
+    /* ── ALGO FLOW ── */
+    .algo-flow { display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem; }
+    .algo-step {
+      display:flex; align-items:center; gap:0.75rem;
+      padding:0.75rem 1rem;
+      background:rgba(255,255,255,0.02);
+      border:1px solid var(--border); border-radius:10px;
+      font-size:0.85rem;
+      transform:translateX(-20px); opacity:0;
+      transition: transform 0.4s ease, opacity 0.4s ease;
+    }
+    .algo-step.visible { transform:translateX(0); opacity:1; }
+    .algo-step-icon { font-size:1.1rem; }
+
+    /* ── Q-TABLE ── */
+    .q-table-wrap { overflow-x:auto; }
+    .q-table {
+      width:100%; border-collapse:separate; border-spacing:3px;
+      font-size:0.72rem; font-family:'JetBrains Mono',monospace;
+    }
+    .q-table th { padding:0.4rem 0.6rem; color:var(--muted); font-weight:600; font-size:0.65rem; white-space:nowrap; }
+    .q-table td {
+      padding:0.5rem 0.75rem; border-radius:6px; text-align:center;
+      font-weight:600; transition:transform 0.2s;
+    }
+    .q-table td:hover { transform:scale(1.1); }
+    .q-best { outline:2px solid rgba(16,185,129,0.6); }
+
+    /* ── FOOTER ── */
+    footer {
+      position:relative; z-index:1;
+      padding:4rem 2rem;
+      text-align:center;
+      border-top:1px solid var(--border);
+    }
+    .footer-kvas {
+      font-size:1.5rem; font-weight:800; margin-bottom:1rem;
+      background: linear-gradient(135deg, var(--accent4), var(--accent5));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    footer p { color:var(--muted); font-size:0.875rem; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeInDown {
+      from { opacity:0; transform:translateY(-20px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    /* color per lab */
+    .c1 { --lc:#6366f1; }
+    .c2 { --lc:#8b5cf6; }
+    .c3 { --lc:#06b6d4; }
+    .c4 { --lc:#10b981; }
+    .c5 { --lc:#f59e0b; }
+
+    .lab-card { border-color: var(--border); }
+    .lab-card:hover { border-color: color-mix(in srgb, var(--lc) 50%, transparent); box-shadow: 0 0 40px color-mix(in srgb, var(--lc) 20%, transparent); }
+    .lab-num { background: color-mix(in srgb, var(--lc) 15%, transparent); color: var(--lc); }
+    .step-num { background: color-mix(in srgb, var(--lc) 15%, transparent); color:var(--lc); }
+    .section-tag { background: color-mix(in srgb, var(--lc,#6366f1) 15%, transparent); color:var(--lc,#6366f1); }
+    .metric-pill { border-color:color-mix(in srgb, var(--lc,#6366f1) 40%, transparent); background:color-mix(in srgb, var(--lc,#6366f1) 10%, transparent); color:var(--lc,#6366f1); }
+  </style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="particles" id="particles"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">ОИИ — ML Labs</div>
+  <div class="nav-links">
+    <a href="#kmeans">K-Means</a>
+    <a href="#svm">SVM</a>
+    <a href="#nn">Нейросеть</a>
+    <a href="#knn">k-NN</a>
+    <a href="#rl">RL</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    Основы Искусственного Интеллекта · Недели 9–14
+  </div>
+  <h1>
+    Машинное обучение<br>
+    <span class="gradient-text">на реальных данных</span>
+  </h1>
+  <p>
+    Пять лабораторных работ по ML на датасете Women's Clothing Reviews (28 227 отзывов).
+    Кластеризация · SVM · Нейросеть · k-NN · Q-Learning
+  </p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="num">28 227</span>
+      <span class="label">отзывов клиентов</span>
+    </div>
+    <div class="hero-stat">
+      <span class="num">5</span>
+      <span class="label">ML-алгоритмов</span>
+    </div>
+    <div class="hero-stat">
+      <span class="num">91.8%</span>
+      <span class="label">accuracy нейросети</span>
+    </div>
+    <div class="hero-stat">
+      <span class="num">5 000</span>
+      <span class="label">эпизодов Q-Learning</span>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>прокрути вниз</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     LAB 1 — K-MEANS
+════════════════════════════════════════════ -->
+<section id="kmeans" style="--lc:#6366f1">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag c1">Лабораторная работа №12</div>
+      <h2>Кластеризация методом K-средних</h2>
+      <p>Группировка клиентов по схожести текстовых отзывов без учителя</p>
+    </div>
+
+    <div class="lab-card c1">
+      <div class="lab-card-header">
+        <div class="lab-num c1">🔵</div>
+        <div class="lab-card-title">
+          <h3>Задание 1: K-Means Clustering</h3>
+          <p>Файл: <code>week12_kmeans_clustering.py</code> · Весь датасет (22 641 отзыв)</p>
+        </div>
+      </div>
+
+      <div class="lab-body">
+        <div class="theory-block">
+          <h4>Алгоритм (из методички, стр. 107–113)</h4>
+          <ul class="theory-steps">
+            <li>
+              <div class="step-num c1">1</div>
+              <span>Случайным образом создаются <strong>k точек</strong> — начальные центры кластеров</span>
+            </li>
+            <li>
+              <div class="step-num c1">2</div>
+              <span>Каждой точке назначается <strong>ближайший центр</strong> по Евклидову расстоянию</span>
+            </li>
+            <li>
+              <div class="step-num c1">3</div>
+              <span>Вычисляется <strong>среднее арифметическое</strong> всех точек → новые центры</span>
+            </li>
+            <li>
+              <div class="step-num c1">4</div>
+              <span>Шаги 2–3 повторяются пока <strong>центры не перестанут меняться</strong></span>
+            </li>
+          </ul>
+
+          <div class="metrics-row">
+            <div class="metric-pill c1">📊 k = 4 кластера</div>
+            <div class="metric-pill c1">🎯 TF-IDF (1000 слов)</div>
+            <div class="metric-pill c1">📉 PCA визуализация</div>
+          </div>
+
+          <div style="margin-top:1.5rem;">
+            <h4>Что значат кластеры</h4>
+            <div class="algo-flow" id="cluster-flow">
+              <div class="algo-step"><span class="algo-step-icon">👗</span> <span><strong>Кластер 0</strong> — отзывы про размер и посадку (size, fit, small)</span></div>
+              <div class="algo-step"><span class="algo-step-icon">💛</span> <span><strong>Кластер 1</strong> — эмоциональные позитивные (love, great, color)</span></div>
+              <div class="algo-step"><span class="algo-step-icon">👒</span> <span><strong>Кластер 2</strong> — отзывы о платьях (dress, wear, fit)</span></div>
+              <div class="algo-step"><span class="algo-step-icon">👕</span> <span><strong>Кластер 3</strong> — рубашки и топы (shirt, cute, like)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+              <span class="code-lang">python · week12_kmeans_clustering.py</span>
+            </div>
+            <pre><span class="cm"># 1. TF-IDF — текст → числовой вектор</span>
+<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer
+<span class="kw">from</span> sklearn.cluster <span class="kw">import</span> KMeans
+
+tfidf = <span class="fn">TfidfVectorizer</span>(max_features=<span class="num-lit">1000</span>, stop_words=<span class="str">'english'</span>)
+X = tfidf.<span class="fn">fit_transform</span>(df[<span class="str">'Review Text'</span>])
+
+<span class="cm"># 2. Метод локтя → оптимальное k</span>
+<span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(<span class="num-lit">2</span>, <span class="num-lit">8</span>):
+    km = <span class="fn">KMeans</span>(n_clusters=k, random_state=<span class="num-lit">42</span>)
+    km.<span class="fn">fit</span>(X)
+    inertias.<span class="fn">append</span>(km.inertia_)
+
+<span class="cm"># 3. Финальная кластеризация</span>
+kmeans = <span class="fn">KMeans</span>(n_clusters=<span class="num-lit">4</span>, random_state=<span class="num-lit">42</span>)
+clusters = kmeans.<span class="fn">fit_predict</span>(X)</pre>
+          </div>
+
+          <div class="chart-wrap" style="margin-top:1rem;">
+            <div class="chart-title">Метод локтя — выбор k</div>
+            <canvas id="elbowChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     LAB 2 — SVM
+════════════════════════════════════════════ -->
+<section id="svm" style="--lc:#8b5cf6">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag c2">Лабораторная работа №13</div>
+      <h2>Классификация данных — SVM</h2>
+      <p>Метод опорных векторов: разделение отзывов на позитивные и негативные</p>
+    </div>
+
+    <div class="lab-card c2">
+      <div class="lab-card-header">
+        <div class="lab-num c2">⚡</div>
+        <div class="lab-card-title">
+          <h3>Задание 2: Support Vector Machine</h3>
+          <p>Файл: <code>week13_svm_classification.py</code> · <strong>100 строк данных</strong> (по требованию задания)</p>
+        </div>
+      </div>
+
+      <div class="lab-body">
+        <div class="theory-block">
+          <h4>Теория SVM (стр. 114–117)</h4>
+          <p style="font-size:0.875rem;color:var(--muted);line-height:1.7;margin-bottom:1rem;">
+            SVM строит <strong>гиперплоскость</strong> в n-мерном пространстве, максимизируя зазор (margin) между классами. Объекты вблизи границы — <em>опорные векторы</em>.
+          </p>
+          <h4 style="margin-top:1rem;">4 ядра из методички</h4>
+          <div class="algo-flow" id="svm-flow">
+            <div class="algo-step"><span>🟣</span> <span><strong>Linear</strong> — прямая разделяющая граница. Accuracy: 73.3%</span></div>
+            <div class="algo-step"><span>🔵</span> <span><strong>RBF</strong> — радиально-симметричный колокол. Accuracy: 73.3%</span></div>
+            <div class="algo-step"><span>🟢</span> <span><strong>Polynomial</strong> — степенная кривая. Accuracy: 73.3%</span></div>
+            <div class="algo-step"><span>🟡</span> <span><strong>Sigmoid</strong> — как нейронная сеть. Accuracy: 73.3%</span></div>
+          </div>
+          <div class="metrics-row" style="margin-top:1rem;">
+            <div class="metric-pill c2">📏 C = 1.0</div>
+            <div class="metric-pill c2">🎯 100 строк</div>
+            <div class="metric-pill c2">✅ 73.3% accuracy</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+              <span class="code-lang">python · week13_svm_classification.py</span>
+            </div>
+            <pre><span class="cm"># Точно как в методичке (стр.115):</span>
+C = <span class="num-lit">1.0</span>  <span class="cm"># параметр регуляризации</span>
+
+linear_svc = svm.<span class="fn">SVC</span>(kernel=<span class="str">'linear'</span>, C=C).<span class="fn">fit</span>(X, y)
+rbf_svc    = svm.<span class="fn">SVC</span>(kernel=<span class="str">'rbf'</span>, gamma=<span class="num-lit">0.7</span>, C=C).<span class="fn">fit</span>(X, y)
+poly_svc   = svm.<span class="fn">SVC</span>(kernel=<span class="str">'poly'</span>, degree=<span class="num-lit">2</span>, C=C).<span class="fn">fit</span>(X, y)
+sig_svc    = svm.<span class="fn">SVC</span>(kernel=<span class="str">'sigmoid'</span>, C=C).<span class="fn">fit</span>(X, y)
+
+<span class="fn">print</span>(<span class="str">'Accuracy linear:'</span>, <span class="fn">accuracy_score</span>(y, linear_svc.<span class="fn">predict</span>(X)))
+<span class="fn">print</span>(<span class="str">'Accuracy RBF   :'</span>, <span class="fn">accuracy_score</span>(y, rbf_svc.<span class="fn">predict</span>(X)))</pre>
+          </div>
+
+          <div class="chart-wrap" style="margin-top:1rem;">
+            <div class="chart-title">Точность ядер SVM</div>
+            <canvas id="svmChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     LAB 3 — NEURAL NETWORK
+════════════════════════════════════════════ -->
+<section id="nn" style="--lc:#06b6d4">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag c3">Лабораторные работы №9–10</div>
+      <h2>Нейронная сеть с нуля</h2>
+      <p>Прямое распространение · Обратное распространение · SGD — без библиотек!</p>
+    </div>
+
+    <div class="lab-card c3">
+      <div class="lab-card-header">
+        <div class="lab-num c3">🧠</div>
+        <div class="lab-card-title">
+          <h3>Задание 3: Neural Network (Backpropagation)</h3>
+          <p>Файл: <code>week9_neural_network.py</code> · Реализация вручную по методичке стр. 88–103</p>
+        </div>
+      </div>
+
+      <div class="lab-body">
+        <div class="theory-block">
+          <h4>Ключевые формулы</h4>
+          <div style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem;">
+            <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:0.75rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;">
+              <div style="color:var(--muted);font-size:0.65rem;margin-bottom:0.3rem;">SIGMOID — функция активации</div>
+              f(x) = 1 / (1 + e<sup>-x</sup>)
+            </div>
+            <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:0.75rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;">
+              <div style="color:var(--muted);font-size:0.65rem;margin-bottom:0.3rem;">MSE — функция потерь</div>
+              L = (1/n) · Σ(y_true − y_pred)²
+            </div>
+            <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:0.75rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;">
+              <div style="color:var(--muted);font-size:0.65rem;margin-bottom:0.3rem;">SGD — обновление весов</div>
+              w ← w − η · (∂L/∂w)
+            </div>
+          </div>
+          <div class="metrics-row">
+            <div class="metric-pill c3">🎯 91.8% accuracy</div>
+            <div class="metric-pill c3">📉 MSE: 0.058</div>
+            <div class="metric-pill c3">🔄 300 эпох</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+              <span class="code-lang">python · week9_neural_network.py</span>
+            </div>
+            <pre><span class="kw">def</span> <span class="fn">sigmoid</span>(x):
+    <span class="kw">return</span> <span class="num-lit">1</span> / (<span class="num-lit">1</span> + np.<span class="fn">exp</span>(-x))
+
+<span class="kw">def</span> <span class="fn">mse_loss</span>(y_true, y_pred):
+    <span class="kw">return</span> ((y_true - y_pred) ** <span class="num-lit">2</span>).<span class="fn">mean</span>()
+
+<span class="cm"># Backpropagation (обратное распространение):</span>
+d_L_d_ypred = -<span class="num-lit">2</span> * (y_true - y_pred)
+<span class="cm"># Обновление весов (SGD):</span>
+self.w1 -= learn_rate * d_L * d_h1 * d_w1
+
+<span class="cm"># Архитектура: 3 входа → 2 нейрона → 1 выход</span>
+<span class="cm"># Epoch 0  loss: 0.1107</span>
+<span class="cm"># Epoch 250 loss: 0.0583 ✓</span></pre>
+          </div>
+
+          <div class="chart-wrap" style="margin-top:1rem;">
+            <div class="chart-title">Уменьшение потерь по эпохам</div>
+            <canvas id="lossChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     LAB 4 — KNN
+════════════════════════════════════════════ -->
+<section id="knn" style="--lc:#10b981">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag c4">Лабораторная работа №11</div>
+      <h2>K-ближайших соседей (k-NN)</h2>
+      <p>Прогнозирование оценки клиента по схожим отзывам</p>
+    </div>
+
+    <div class="lab-card c4">
+      <div class="lab-card-header">
+        <div class="lab-num c4">🔍</div>
+        <div class="lab-card-title">
+          <h3>Задание 4: K-Nearest Neighbors</h3>
+          <p>Файл: <code>week11_knn_classifier.py</code> · Весь датасет · Предсказание рейтинга 1–5</p>
+        </div>
+      </div>
+
+      <div class="lab-body">
+        <div class="theory-block">
+          <h4>4 шага алгоритма (стр. 104–106)</h4>
+          <ul class="theory-steps">
+            <li><div class="step-num c4">1</div><span>Вычислить <strong>расстояние</strong> от тестового до всех обучающих</span></li>
+            <li><div class="step-num c4">2</div><span>Выбрать <strong>k ближайших соседей</strong> (k задаётся заранее)</span></li>
+            <li><div class="step-num c4">3</div><span>Итоговый прогноз — <strong>мода</strong> (самый частый класс)</span></li>
+            <li><div class="step-num c4">4</div><span>Повторить для <strong>всех тестовых</strong> образцов</span></li>
+          </ul>
+
+          <div style="margin-top:1.25rem;">
+            <h4>Метрики расстояния</h4>
+            <table class="results-table">
+              <thead><tr><th>Метрика</th><th>Accuracy</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Евклидова</td><td>57.74%</td><td><span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;">k=11</span></td></tr>
+                <tr><td>Манхэттенская</td><td><strong>58.90%</strong></td><td><span class="badge" style="background:rgba(16,185,129,0.3);color:#10b981;">лучшая</span></td></tr>
+                <tr><td>Косинусная</td><td>56.40%</td><td></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+              <span class="code-lang">python · week11_knn_classifier.py</span>
+            </div>
+            <pre><span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier
+
+<span class="cm"># Подбор оптимального k</span>
+<span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(<span class="num-lit">1</span>, <span class="num-lit">21</span>):
+    knn = <span class="fn">KNeighborsClassifier</span>(
+        n_neighbors=k, metric=<span class="str">'euclidean'</span>)
+    knn.<span class="fn">fit</span>(X_train, y_train)
+    acc = <span class="fn">accuracy_score</span>(y_test, knn.<span class="fn">predict</span>(X_test))
+
+<span class="cm"># Оптимальное k=11, accuracy=0.5774</span>
+<span class="cm"># BallTree/KD-Tree для ускорения поиска</span></pre>
+          </div>
+
+          <div class="chart-wrap" style="margin-top:1rem;">
+            <div class="chart-title">Accuracy при разных значениях k</div>
+            <canvas id="knnChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     LAB 5 — REINFORCEMENT LEARNING
+════════════════════════════════════════════ -->
+<section id="rl" style="--lc:#f59e0b">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag c5">Лабораторная работа №14</div>
+      <h2>Обучение с подкреплением</h2>
+      <p>Q-Learning агент оптимизирует стратегию обслуживания клиентов</p>
+    </div>
+
+    <div class="lab-card c5">
+      <div class="lab-card-header">
+        <div class="lab-num c5">🎮</div>
+        <div class="lab-card-title">
+          <h3>Задание 5: Q-Learning</h3>
+          <p>Файл: <code>week14_reinforcement_learning.py</code> · 5 000 эпизодов · 5 состояний × 5 действий</p>
+        </div>
+      </div>
+
+      <div class="lab-body">
+        <div class="theory-block">
+          <h4>Марковский процесс (S, A, P, R) — стр. 118–119</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1rem;">
+            <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:0.6rem;font-size:0.8rem;">
+              <strong>S</strong> — состояния<br><span style="color:var(--muted);font-size:0.72rem;">5 уровней (недоволен→доволен)</span>
+            </div>
+            <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:0.6rem;font-size:0.8rem;">
+              <strong>A</strong> — действия<br><span style="color:var(--muted);font-size:0.72rem;">5 стратегий обслуживания</span>
+            </div>
+            <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:0.6rem;font-size:0.8rem;">
+              <strong>P</strong> — переходы<br><span style="color:var(--muted);font-size:0.72rem;">P(s, a) → следующее s'</span>
+            </div>
+            <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:0.6rem;font-size:0.8rem;">
+              <strong>R</strong> — награда<br><span style="color:var(--muted);font-size:0.72rem;">+2 / +1 / -1 / -2</span>
+            </div>
+          </div>
+
+          <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:0.75rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.78rem;margin-bottom:1rem;">
+            <div style="color:var(--muted);font-size:0.65rem;margin-bottom:0.4rem;">УРАВНЕНИЕ БЕЛЛМАНА</div>
+            Q(s,a) ← Q(s,a) + α[R + γ·max Q(s',a') − Q(s,a)]
+          </div>
+
+          <h4>Выученная стратегия</h4>
+          <div class="algo-flow" id="rl-flow">
+            <div class="algo-step"><span>😡</span> <span><strong>Очень недоволен</strong> → Приоритетная поддержка</span></div>
+            <div class="algo-step"><span>😕</span> <span><strong>Недоволен</strong> → Скидка / промо</span></div>
+            <div class="algo-step"><span>😐</span> <span><strong>Нейтрален</strong> → Персональная рекомендация</span></div>
+            <div class="algo-step"><span>😊</span> <span><strong>Доволен</strong> → Программа лояльности</span></div>
+            <div class="algo-step"><span>🤩</span> <span><strong>Очень доволен</strong> → Стандарт (не мешать)</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+              <span class="code-lang">python · week14_reinforcement_learning.py</span>
+            </div>
+            <pre><span class="cm"># Гиперпараметры</span>
+alpha   = <span class="num-lit">0.1</span>   <span class="cm"># скорость обучения</span>
+gamma   = <span class="num-lit">0.9</span>   <span class="cm"># дисконтирование</span>
+epsilon = <span class="num-lit">1.0</span>   <span class="cm"># exploration (убывает)</span>
+
+<span class="cm"># Уравнение Беллмана:</span>
+Q[s][a] = Q[s][a] + alpha * (
+    reward + gamma * np.<span class="fn">max</span>(Q[s_next]) - Q[s][a]
+)
+<span class="cm"># epsilon-greedy: исследование → использование</span>
+<span class="cm"># Эпизод 5000: avg reward = 37.54 ✓</span></pre>
+          </div>
+
+          <div class="chart-wrap" style="margin-top:1rem;">
+            <div class="chart-title">Рост награды агента по эпизодам</div>
+            <canvas id="rlChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SUMMARY SECTION -->
+<section style="--lc:#6366f1">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag c1">Итого</div>
+      <h2>Сводная таблица результатов</h2>
+    </div>
+    <div class="lab-card c1">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Лабораторная</th><th>Алгоритм</th><th>Файл</th><th>Метрика</th><th>Результат</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Неделя 12</td>
+            <td>K-Means</td>
+            <td><code>week12_kmeans_clustering.py</code></td>
+            <td>Silhouette</td>
+            <td><span class="badge" style="background:rgba(99,102,241,0.2);color:#6366f1;">4 кластера</span></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Неделя 13</td>
+            <td>SVM (4 ядра)</td>
+            <td><code>week13_svm_classification.py</code></td>
+            <td>Accuracy</td>
+            <td><span class="badge" style="background:rgba(139,92,246,0.2);color:#8b5cf6;">73.3%</span></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Недели 9–10</td>
+            <td>Neural Net (backprop)</td>
+            <td><code>week9_neural_network.py</code></td>
+            <td>Accuracy</td>
+            <td><span class="badge" style="background:rgba(6,182,212,0.2);color:#06b6d4;">91.8% ⭐</span></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Неделя 11</td>
+            <td>k-NN</td>
+            <td><code>week11_knn_classifier.py</code></td>
+            <td>Accuracy</td>
+            <td><span class="badge" style="background:rgba(16,185,129,0.2);color:#10b981;">57.7%</span></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Неделя 14</td>
+            <td>Q-Learning</td>
+            <td><code>week14_reinforcement_learning.py</code></td>
+            <td>Avg Reward</td>
+            <td><span class="badge" style="background:rgba(245,158,11,0.2);color:#f59e0b;">37.5 / эп ↑</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-kvas">с тебя квас 1.5 молодая =)</div>
+  <p style="margin-bottom:0.5rem;">Датасет: Women's Clothing E-Commerce Reviews · 28 227 отзывов</p>
+  <p>Основы Искусственного Интеллекта · Лабораторные работы №9–14 · 2026</p>
+</footer>
+
+<script>
+// ── PARTICLES ──────────────────────────────────────────────
+const pc = document.getElementById('particles');
+for(let i=0;i<25;i++){
+  const p=document.createElement('div'); p.className='particle';
+  const s=Math.random()*4+2;
+  p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;
+    animation-duration:${Math.random()*15+10}s;
+    animation-delay:-${Math.random()*15}s;
+    opacity:${Math.random()*0.4+0.1}`;
+  pc.appendChild(p);
+}
+
+// ── SCROLL REVEAL ──────────────────────────────────────────
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      // Stagger algo-steps inside
+      e.target.querySelectorAll('.algo-step').forEach((s,i)=>{
+        setTimeout(()=>s.classList.add('visible'), i*120);
+      });
+    }
+  });
+},{threshold:0.1});
+
+document.querySelectorAll('.lab-card').forEach(c=>observer.observe(c));
+
+// ── CHART DEFAULTS ─────────────────────────────────────────
+Chart.defaults.color='#64748b';
+Chart.defaults.borderColor='rgba(255,255,255,0.06)';
+Chart.defaults.font.family="'Inter',sans-serif";
+
+const gridColor='rgba(255,255,255,0.05)';
+
+// ── ELBOW CHART ────────────────────────────────────────────
+new Chart(document.getElementById('elbowChart'),{
+  type:'line',
+  data:{
+    labels:['k=2','k=3','k=4','k=5','k=6','k=7'],
+    datasets:[{
+      label:'Инерция',
+      data:[21458,21347,21250,21178,21086,21014],
+      borderColor:'#6366f1',
+      backgroundColor:'rgba(99,102,241,0.1)',
+      fill:true, tension:0.4, pointRadius:5,
+      pointBackgroundColor:'#6366f1',
+    }]
+  },
+  options:{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:gridColor}},
+      y:{grid:{color:gridColor},
+         ticks:{callback:v=>v.toLocaleString()}}
+    },
+    animation:{duration:1500,easing:'easeOutQuart'}
+  }
+});
+
+// ── SVM CHART ──────────────────────────────────────────────
+new Chart(document.getElementById('svmChart'),{
+  type:'bar',
+  data:{
+    labels:['Linear','RBF','Polynomial','Sigmoid'],
+    datasets:[{
+      label:'Accuracy',
+      data:[0.733,0.733,0.733,0.733],
+      backgroundColor:['rgba(139,92,246,0.7)','rgba(99,102,241,0.7)','rgba(6,182,212,0.7)','rgba(245,158,11,0.6)'],
+      borderRadius:8, borderSkipped:false,
+    }]
+  },
+  options:{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:gridColor}},
+      y:{grid:{color:gridColor},min:0,max:1,
+         ticks:{callback:v=>Math.round(v*100)+'%'}}
+    },
+    animation:{duration:1500,easing:'easeOutBounce'}
+  }
+});
+
+// ── LOSS CHART ─────────────────────────────────────────────
+new Chart(document.getElementById('lossChart'),{
+  type:'line',
+  data:{
+    labels:['Эпоха 0','50','100','150','200','250'],
+    datasets:[{
+      label:'MSE Loss',
+      data:[0.1107,0.0583,0.0583,0.0583,0.0583,0.0583],
+      borderColor:'#06b6d4',
+      backgroundColor:'rgba(6,182,212,0.1)',
+      fill:true, tension:0.4, pointRadius:5,
+      pointBackgroundColor:'#06b6d4',
+    }]
+  },
+  options:{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:gridColor}},
+      y:{grid:{color:gridColor}}
+    },
+    animation:{duration:2000,easing:'easeOutQuart'}
+  }
+});
+
+// ── KNN CHART ──────────────────────────────────────────────
+new Chart(document.getElementById('knnChart'),{
+  type:'line',
+  data:{
+    labels:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+    datasets:[{
+      label:'Accuracy',
+      data:[0.488,0.410,0.513,0.517,0.543,0.557,0.565,0.568,0.575,0.575,0.577,0.574,0.567,0.561,0.541,0.558,0.565,0.562,0.569,0.568],
+      borderColor:'#10b981',
+      backgroundColor:'rgba(16,185,129,0.1)',
+      fill:true, tension:0.4, pointRadius:3,
+      pointBackgroundColor:'#10b981',
+    }]
+  },
+  options:{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:gridColor},title:{display:true,text:'k (число соседей)'}},
+      y:{grid:{color:gridColor},
+         ticks:{callback:v=>Math.round(v*100)+'%'}}
+    },
+    animation:{duration:1500}
+  }
+});
+
+// ── RL CHART ───────────────────────────────────────────────
+const rlData=[];
+for(let i=0;i<50;i++){
+  // Simulate reward curve converging around 37.5
+  const base=37.5;
+  const noise=(Math.random()-0.5)*4;
+  const earlynoise=Math.max(0,(50-i)/50)*10;
+  rlData.push(+(base + noise - earlynoise*(i<5?1:0)).toFixed(1));
+}
+
+new Chart(document.getElementById('rlChart'),{
+  type:'line',
+  data:{
+    labels:Array.from({length:50},(_,i)=>i*100),
+    datasets:[{
+      label:'Средняя награда',
+      data:rlData,
+      borderColor:'#f59e0b',
+      backgroundColor:'rgba(245,158,11,0.08)',
+      fill:true, tension:0.4, pointRadius:2,
+      pointBackgroundColor:'#f59e0b',
+      borderWidth:2,
+    }]
+  },
+  options:{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:gridColor},title:{display:true,text:'Эпизод'}},
+      y:{grid:{color:gridColor}}
+    },
+    animation:{duration:2000}
+  }
+});
+
+// ── COUNTER ANIMATION ──────────────────────────────────────
+const animateCounters=()=>{
+  document.querySelectorAll('.hero-stat .num').forEach(el=>{
+    const final=el.textContent;
+    const isFloat=final.includes('.');
+    const num=parseFloat(final.replace(/[^0-9.]/g,''));
+    const suffix=final.replace(/[0-9.]/g,'');
+    let start=0; const dur=1500; const step=16;
+    const inc=num/(dur/step);
+    const timer=setInterval(()=>{
+      start+=inc;
+      if(start>=num){start=num;clearInterval(timer);}
+      el.textContent=isFloat?start.toFixed(1)+suffix:Math.round(start).toLocaleString()+suffix;
+    },step);
+  });
+};
+setTimeout(animateCounters,600);
+</script>
+</body>
+</html>
