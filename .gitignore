@@ -1,0 +1,18 @@
+# Мусорные файлы из процесса разработки
+pdf_output.txt
+pdf_pages.txt
+pdf_pages_utf8.txt
+read_pdf.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Виртуальное окружение
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
